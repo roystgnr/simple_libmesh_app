@@ -30,7 +30,7 @@ int main (int argc, char ** argv)
 
   EquationSystems equation_systems(mesh);
 
-  ExplicitSystem & output_system = equation_systems.add_system<ExplicitSystem>("output_system");
+  auto & output_system = equation_systems.add_system<ExplicitSystem>("output_system");
 
   output_system.add_variable("processor", CONSTANT, MONOMIAL);
 
