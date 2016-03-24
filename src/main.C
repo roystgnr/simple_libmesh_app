@@ -99,12 +99,16 @@ int main (int argc, char ** argv)
 
   if (comm.rank() == 0)
   {
+    Parallel::Request send_request;
+
     std::vector<std::shared_ptr<CustomClass> > custom_class_vector { std::make_shared<CustomClass>(), std::make_shared<CustomClass>() };
 
     for (auto & cc : custom_class_vector)
       std::cerr<<comm.rank()<<" "<<cc->data1<<" "<<cc->data2<<std::endl;
 
-    comm.send_packed_range(1, &custom_class_vector, custom_class_vector.begin(), custom_class_vector.end(), tag);
+    comm.send_packed_range(1, &custom_class_vector, custom_class_vector.begin(), custom_class_vector.end(), send_request, tag);
+
+    send_request.wait();
   }
   else
   {
