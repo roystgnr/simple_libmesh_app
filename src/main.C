@@ -36,7 +36,7 @@ int main (int argc, char ** argv)
 
   equation_systems.init();
 
-  auto solution_vector = output_system.solution;
+  auto & solution_vector = output_system.solution;
 
   for (auto elem_it = mesh.local_elements_begin(); elem_it != mesh.local_elements_end(); ++elem_it)
   {
@@ -48,6 +48,7 @@ int main (int argc, char ** argv)
   }
 
   solution_vector->close();
+
 
   ExodusII_IO(mesh).write_equation_systems("out.e", equation_systems);
 
