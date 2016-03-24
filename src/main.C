@@ -11,6 +11,7 @@
 #include "libmesh/exodusII_io.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/parallel.h"
+#include "libmesh/parallel_algebra.h"
 
 using namespace libMesh;
 
@@ -90,7 +91,6 @@ using namespace libMesh;
 
 int main (int argc, char ** argv)
 {
-
   LibMeshInit init (argc, argv);
 
   Parallel::Communicator & comm = init.comm();
@@ -101,23 +101,44 @@ int main (int argc, char ** argv)
   {
     Parallel::Request send_request;
 
-    std::vector<std::shared_ptr<CustomClass> > custom_class_vector { std::make_shared<CustomClass>(), std::make_shared<CustomClass>() };
+    std::vector<std::shared_ptr<CustomClass> > custom_class_vector { std::make_shared<CustomClass>(), std::make_shared<CustomClass>(), std::make_shared<CustomClass>() };
 
     for (auto & cc : custom_class_vector)
       std::cerr<<comm.rank()<<" "<<cc->data1<<" "<<cc->data2<<std::endl;
 
-    comm.send_packed_range(1, &custom_class_vector, custom_class_vector.begin(), custom_class_vector.end(), send_request, tag);
+    comm.new_send_packed_range(1, &custom_class_vector, custom_class_vector.begin(), custom_class_vector.end(), send_request, tag);
 
     send_request.wait();
   }
   else
   {
+    Parallel::Status stat;
+    bool flag;
+
+    do
+    {
+      stat = comm.packed_range_probe<std::shared_ptr<CustomClass> >(Parallel::any_source, tag, flag);
+    }
+    while(!flag);
+
+    Parallel::Request receive_request;
+
     std::vector<std::shared_ptr<CustomClass> > custom_class_vector;
 
-    comm.receive_packed_range(0, &custom_class_vector, std::back_inserter(custom_class_vector), (std::shared_ptr<CustomClass>*)(libmesh_nullptr), tag);
+    comm.receive_packed_range(0, &custom_class_vector, std::back_inserter(custom_class_vector), (std::shared_ptr<CustomClass>*)(libmesh_nullptr), receive_request, stat, tag);
+
+    do
+    {
+      std::cerr<<"Test: "<<receive_request.test()<<std::endl;
+    }
+    while (!receive_request.test());
+
+    // Finish request
+    receive_request.wait();
 
     for (auto & cc : custom_class_vector)
       std::cerr<<comm.rank()<<" "<<cc->data1<<" "<<cc->data2<<std::endl;
+
   }
 
   return 0;
