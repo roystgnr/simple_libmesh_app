@@ -106,7 +106,9 @@ int main (int argc, char ** argv)
     for (auto & cc : custom_class_vector)
       std::cerr<<comm.rank()<<" "<<cc->data1<<" "<<cc->data2<<std::endl;
 
-    comm.new_send_packed_range(1, &custom_class_vector, custom_class_vector.begin(), custom_class_vector.end(), send_request, tag);
+    comm.nonblocking_send_packed_range(1, &custom_class_vector,
+                                       custom_class_vector.begin(),
+                                       custom_class_vector.end(), send_request, tag);
 
     send_request.wait();
   }
@@ -115,6 +117,7 @@ int main (int argc, char ** argv)
     Parallel::Status stat;
     bool flag;
 
+    // Wait for a message to get here
     do
     {
       stat = comm.packed_range_probe<std::shared_ptr<CustomClass> >(Parallel::any_source, tag, flag);
@@ -125,20 +128,19 @@ int main (int argc, char ** argv)
 
     std::vector<std::shared_ptr<CustomClass> > custom_class_vector;
 
-    comm.receive_packed_range(0, &custom_class_vector, std::back_inserter(custom_class_vector), (std::shared_ptr<CustomClass>*)(libmesh_nullptr), receive_request, stat, tag);
+    comm.nonblocking_receive_packed_range(stat.source(), &custom_class_vector,
+                                          std::back_inserter(custom_class_vector),
+                                          (std::shared_ptr<CustomClass>*)(libmesh_nullptr),
+                                          receive_request, stat, tag);
 
-    do
-    {
-      std::cerr<<"Test: "<<receive_request.test()<<std::endl;
-    }
+    // Wait for the full message to arrive
     while (!receive_request.test());
 
-    // Finish request
+    // Finish request, this is where the vector will actually be "unpacked"
     receive_request.wait();
 
     for (auto & cc : custom_class_vector)
       std::cerr<<comm.rank()<<" "<<cc->data1<<" "<<cc->data2<<std::endl;
-
   }
 
   return 0;
