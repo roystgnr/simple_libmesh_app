@@ -23,34 +23,18 @@ int main (int argc, char ** argv)
   Mesh mesh(init.comm());
 
   MeshTools::Generation::build_square (mesh,
-                                       3, 3,
+                                       100, 100,
                                        -1., 1.,
                                        -1., 1.,
                                        QUAD4);
 
   EquationSystems equation_systems(mesh);
 
-  auto & output_system = equation_systems.add_system<ExplicitSystem>("output_system");
+  auto & primary = equation_systems.add_system<ExplicitSystem>("primary");
 
-  output_system.add_variable("processor", CONSTANT, MONOMIAL);
+  primary.add_variable("u", CONSTANT, MONOMIAL);
 
   equation_systems.init();
-
-  auto & solution_vector = output_system.solution;
-
-  for (auto elem_it = mesh.local_elements_begin(); elem_it != mesh.local_elements_end(); ++elem_it)
-  {
-    auto elem = *elem_it;
-
-    auto dof = elem->dof_number(0, 0, 0);
-
-    solution_vector->set(dof, elem->processor_id());
-  }
-
-  solution_vector->close();
-
-
-  ExodusII_IO(mesh).write_equation_systems("out.e", equation_systems);
 
   return 0;
 }
