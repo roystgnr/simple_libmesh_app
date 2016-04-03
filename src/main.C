@@ -20,15 +20,28 @@ using namespace libMesh;
 
 int main (int argc, char ** argv)
 {
-
   LibMeshInit init (argc, argv);
+
+  if (libMesh::on_command_line("--help"))
+  {
+    std::cout<<"Example: ./simple-opt --n-elem 100 --n-sweeps 10 --fe-reinit-qrule --fe-reinit-custom\n\n"
+             <<"--n-elem <num>     How many elements to use in both x and y directions\n"
+             <<"--n-sweeps <um>    How many times to do the element loop\n"
+             <<"--fe-reinit-qrule  Do the reinit() study using a QRule\n"
+             <<"--fe-reinit-custom Do the reinit() study using a custom point\n"
+             <<std::endl;
+
+    return 0;
+  }
 
   Parallel::Communicator & comm = init.comm();
 
   Mesh mesh(init.comm());
 
+  unsigned int n_elem = libMesh::command_line_next("--n-elem", 50);
+
   MeshTools::Generation::build_square (mesh,
-                                       400, 400,
+                                       n_elem, n_elem,
                                        -1., 1.,
                                        -1., 1.,
                                        QUAD4);
@@ -51,10 +64,10 @@ int main (int argc, char ** argv)
   ThreadedComputation tc(fe_data);
 
   // How many times to go through the mesh
-  unsigned int n_sweeps = 10;
-
+  unsigned int n_sweeps = libMesh::command_line_next("--n-sweeps", 10);
 
   // Using qrule
+  if (libMesh::on_command_line("--fe-reinit-qrule"))
   {
     std::cout<<"\nReinit with qrule..."<<std::endl;
 
@@ -77,6 +90,7 @@ int main (int argc, char ** argv)
 
 
   // Using custom point
+  if (libMesh::on_command_line("--fe-reinit-custom"))
   {
     std::cout<<"\nReinit with custom point..."<<std::endl;
 
