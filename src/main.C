@@ -1,5 +1,6 @@
 // Local Includes
 #include "ThreadedComputation.h"
+#include "FEData.h"
 
 // libMesh Includes
 #include "libmesh/libmesh.h"
@@ -27,7 +28,7 @@ int main (int argc, char ** argv)
   Mesh mesh(init.comm());
 
   MeshTools::Generation::build_square (mesh,
-                                       100, 100,
+                                       1000, 1000,
                                        -1., 1.,
                                        -1., 1.,
                                        QUAD4);
@@ -36,15 +37,37 @@ int main (int argc, char ** argv)
 
   auto & primary = equation_systems.add_system<ExplicitSystem>("primary");
 
-  primary.add_variable("u", CONSTANT, MONOMIAL);
+  primary.add_variable("u", FIRST, LAGRANGE);
 
   equation_systems.init();
 
+  std::vector<std::shared_ptr<FEData> > fe_data(libMesh::n_threads());
+
+  for (unsigned int i=0; i<libMesh::n_threads(); i++)
+    fe_data[i] = std::make_shared<FEData>(mesh);
+
   ConstElemRange elem_range(mesh.local_elements_begin(), mesh.local_elements_end(), 1);
 
-  ThreadedComputation tc;
+  ThreadedComputation tc(fe_data);
 
-  Threads::parallel_reduce(elem_range, tc);
+  // How many times to go through the mesh
+  unsigned int n_sweeps = 100;
+
+  auto execution_start_time = std::chrono::steady_clock::now();
+
+  for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
+    Threads::parallel_reduce(elem_range, tc);
+
+  comm.barrier();
+
+  auto execution_time = std::chrono::steady_clock::now() - execution_start_time;
+
+  auto execution_time_seconds = std::chrono::duration<Real>(execution_time).count();
+  std::cout<<"Total Time: "<<execution_time_seconds<<std::endl;
+
+  auto ns_per_element = std::chrono::duration<Real, std::nano>(execution_time).count() / (Real)(mesh.n_elem() * n_sweeps);
+  std::cout<<"ns/element: "<<ns_per_element<<std::endl;
+  std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
 
   return 0;
 }
