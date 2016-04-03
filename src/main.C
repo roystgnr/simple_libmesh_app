@@ -1,3 +1,7 @@
+// Local Includes
+#include "ThreadedComputation.h"
+
+// libMesh Includes
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/node.h"
@@ -35,6 +39,12 @@ int main (int argc, char ** argv)
   primary.add_variable("u", CONSTANT, MONOMIAL);
 
   equation_systems.init();
+
+  ConstElemRange elem_range(mesh.local_elements_begin(), mesh.local_elements_end(), 1);
+
+  ThreadedComputation tc;
+
+  Threads::parallel_reduce(elem_range, tc);
 
   return 0;
 }
