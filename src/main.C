@@ -28,7 +28,7 @@ int main (int argc, char ** argv)
   Mesh mesh(init.comm());
 
   MeshTools::Generation::build_square (mesh,
-                                       1000, 1000,
+                                       400, 400,
                                        -1., 1.,
                                        -1., 1.,
                                        QUAD4);
@@ -51,23 +51,53 @@ int main (int argc, char ** argv)
   ThreadedComputation tc(fe_data);
 
   // How many times to go through the mesh
-  unsigned int n_sweeps = 100;
+  unsigned int n_sweeps = 10;
 
-  auto execution_start_time = std::chrono::steady_clock::now();
 
-  for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
-    Threads::parallel_reduce(elem_range, tc);
+  // Using qrule
+  {
+    std::cout<<"\nReinit with qrule..."<<std::endl;
 
-  comm.barrier();
+    auto execution_start_time = std::chrono::steady_clock::now();
 
-  auto execution_time = std::chrono::steady_clock::now() - execution_start_time;
+    for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
+      Threads::parallel_reduce(elem_range, tc);
 
-  auto execution_time_seconds = std::chrono::duration<Real>(execution_time).count();
-  std::cout<<"Total Time: "<<execution_time_seconds<<std::endl;
+    comm.barrier();
 
-  auto ns_per_element = std::chrono::duration<Real, std::nano>(execution_time).count() / (Real)(mesh.n_elem() * n_sweeps);
-  std::cout<<"ns/element: "<<ns_per_element<<std::endl;
-  std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
+    auto execution_time = std::chrono::steady_clock::now() - execution_start_time;
+
+    auto execution_time_seconds = std::chrono::duration<Real>(execution_time).count();
+    std::cout<<"Total Time: "<<execution_time_seconds<<std::endl;
+
+    auto ns_per_element = std::chrono::duration<Real, std::nano>(execution_time).count() / (Real)(mesh.n_elem() * n_sweeps);
+    std::cout<<"ns/element: "<<ns_per_element<<std::endl;
+    std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
+  }
+
+
+  // Using custom point
+  {
+    std::cout<<"\nReinit with custom point..."<<std::endl;
+
+    tc.useCustomPoint(true);
+
+    auto execution_start_time = std::chrono::steady_clock::now();
+
+    for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
+      Threads::parallel_reduce(elem_range, tc);
+
+    comm.barrier();
+
+    auto execution_time = std::chrono::steady_clock::now() - execution_start_time;
+
+    auto execution_time_seconds = std::chrono::duration<Real>(execution_time).count();
+    std::cout<<"Total Time: "<<execution_time_seconds<<std::endl;
+
+    auto ns_per_element = std::chrono::duration<Real, std::nano>(execution_time).count() / (Real)(mesh.n_elem() * n_sweeps);
+    std::cout<<"ns/element: "<<ns_per_element<<std::endl;
+    std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
+  }
 
   return 0;
 }

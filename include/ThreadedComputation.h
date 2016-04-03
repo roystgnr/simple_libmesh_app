@@ -21,7 +21,8 @@ class ThreadedComputation
 {
 public:
   ThreadedComputation(std::vector<std::shared_ptr<FEData> > & fe_data):
-      _fe_data(fe_data)
+      _fe_data(fe_data),
+      _evaluation_points(1)
   {
   }
 
@@ -29,7 +30,9 @@ public:
    * Splitting Constructor
    */
   ThreadedComputation(ThreadedComputation & x, Threads::split split):
-      _fe_data(x._fe_data)
+      _fe_data(x._fe_data),
+      _evaluation_points(1),
+      _custom_point(x._custom_point)
   {
   }
 
@@ -49,7 +52,10 @@ public:
 
     for (auto & elem : range)
     {
-      fe->reinit(elem);
+      if (_custom_point)
+        fe->reinit(elem, &_evaluation_points);
+      else
+        fe->reinit(elem);
     }
   }
 
@@ -57,8 +63,14 @@ public:
   {
   }
 
+  void useCustomPoint(bool custom_point) { _custom_point = custom_point; }
+
 protected:
   std::vector<std::shared_ptr<FEData> > & _fe_data;
+
+  std::vector<Point> _evaluation_points;
+
+  bool _custom_point = false;
 };
 
 
