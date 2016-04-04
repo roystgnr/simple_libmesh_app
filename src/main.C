@@ -16,6 +16,9 @@
 #include "libmesh/exodusII_io.h"
 #include "libmesh/mesh_generation.h"
 
+// C++ Includes
+#include <chrono>
+
 using namespace libMesh;
 
 int main (int argc, char ** argv)
