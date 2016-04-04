@@ -37,6 +37,8 @@ int main (int argc, char ** argv)
     return 0;
   }
 
+  ParallelUniqueId::initialize();
+
   Parallel::Communicator & comm = init.comm();
 
   Mesh mesh(init.comm());
