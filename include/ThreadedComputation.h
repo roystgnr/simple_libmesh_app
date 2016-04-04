@@ -36,7 +36,7 @@ public:
   {
   }
 
-  void operator() (ConstElemRange & range)
+  void operator() (const ConstElemRange & range)
   {
     ParallelUniqueId pid;
     auto tid = pid.id;
