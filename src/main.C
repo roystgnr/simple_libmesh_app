@@ -34,6 +34,7 @@ int main (int argc, char ** argv)
              <<"--fe-reinit-qrule  Do the reinit() study using a QRule\n"
              <<"--fe-reinit-custom Do the reinit() study using a custom point\n"
              <<"--inverse-map      Do the inverse map study\n"
+             <<"--dim              Dimension of the problem (defaults to 2)\n"
              <<std::endl;
 
     return 0;
@@ -47,11 +48,26 @@ int main (int argc, char ** argv)
 
   unsigned int n_elem = libMesh::command_line_next("--n-elem", 50);
 
-  MeshTools::Generation::build_square (mesh,
-                                       n_elem, n_elem,
+  unsigned int dim = libMesh::command_line_next("--dim", 2);
+
+  if (dim == 2)
+  {
+    MeshTools::Generation::build_square (mesh,
+                                         n_elem, n_elem,
+                                         -1., 1.,
+                                         -1., 1.,
+                                         QUAD4);
+  }
+  else
+  {
+    MeshTools::Generation::build_cube (mesh,
+                                       n_elem, n_elem, n_elem
                                        -1., 1.,
                                        -1., 1.,
-                                       QUAD4);
+                                       -1., 1.,
+                                       HEX8);
+  }
+
 
   EquationSystems equation_systems(mesh);
 
