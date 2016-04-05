@@ -1,5 +1,5 @@
 // Local Includes
-#include "ThreadedComputation.h"
+#include "FEReinitComputation.h"
 #include "FEData.h"
 
 // libMesh Includes
@@ -66,7 +66,7 @@ int main (int argc, char ** argv)
 
   ConstElemRange elem_range(mesh.local_elements_begin(), mesh.local_elements_end(), 1);
 
-  ThreadedComputation tc(fe_data);
+  FEReinitComputation ferc(fe_data);
 
   // How many times to go through the mesh
   unsigned int n_sweeps = libMesh::command_line_next("--n-sweeps", 10);
@@ -79,7 +79,7 @@ int main (int argc, char ** argv)
     auto execution_start_time = std::chrono::steady_clock::now();
 
     for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
-      Threads::parallel_reduce(elem_range, tc);
+      Threads::parallel_reduce(elem_range, ferc);
 
     comm.barrier();
 
@@ -99,12 +99,12 @@ int main (int argc, char ** argv)
   {
     std::cout<<"\nReinit with custom point..."<<std::endl;
 
-    tc.useCustomPoint(true);
+    ferc.useCustomPoint(true);
 
     auto execution_start_time = std::chrono::steady_clock::now();
 
     for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
-      Threads::parallel_reduce(elem_range, tc);
+      Threads::parallel_reduce(elem_range, ferc);
 
     comm.barrier();
 

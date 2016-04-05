@@ -31,8 +31,7 @@ public:
    */
   ThreadedComputation(ThreadedComputation & x, Threads::split split):
       _fe_data(x._fe_data),
-      _evaluation_points(1),
-      _custom_point(x._custom_point)
+      _evaluation_points(1)
   {
   }
 
@@ -44,7 +43,7 @@ public:
     // Get our own unique FEData
     auto & fe_data = _fe_data[tid];
 
-    auto & fe = fe_data->_fe;
+    _fe = fe_data->_fe.get();
     auto & phi = fe_data->_phi;
 
     auto & fe_face = fe_data->_fe_face;
@@ -52,10 +51,7 @@ public:
 
     for (auto & elem : range)
     {
-      if (_custom_point)
-        fe->reinit(elem, &_evaluation_points);
-      else
-        fe->reinit(elem);
+      onElement(elem);
     }
   }
 
@@ -63,14 +59,14 @@ public:
   {
   }
 
-  void useCustomPoint(bool custom_point) { _custom_point = custom_point; }
-
 protected:
+  virtual void onElement(const Elem * elem) = 0;
+
   std::vector<std::shared_ptr<FEData> > & _fe_data;
 
-  std::vector<Point> _evaluation_points;
+  FEBase * _fe;
 
-  bool _custom_point = false;
+  std::vector<Point> _evaluation_points;
 };
 
 
