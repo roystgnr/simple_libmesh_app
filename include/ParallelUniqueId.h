@@ -38,6 +38,8 @@ public:
 
   ParallelUniqueId()
   {
+    libmesh_assert(this->_initialized);
+
 #ifdef LIBMESH_HAVE_TBB_API
     _ids.pop(id);
 #elif LIBMESH_HAVE_OPENMP
