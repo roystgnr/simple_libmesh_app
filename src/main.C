@@ -1,5 +1,6 @@
 // Local Includes
 #include "FEReinitComputation.h"
+#include "InverseMapComputation.h"
 #include "FEData.h"
 
 // libMesh Includes
@@ -32,6 +33,7 @@ int main (int argc, char ** argv)
              <<"--n-sweeps <um>    How many times to do the element loop\n"
              <<"--fe-reinit-qrule  Do the reinit() study using a QRule\n"
              <<"--fe-reinit-custom Do the reinit() study using a custom point\n"
+             <<"--inverse-map      Do the inverse map study\n"
              <<std::endl;
 
     return 0;
@@ -117,6 +119,33 @@ int main (int argc, char ** argv)
     std::cout<<"ns/element: "<<ns_per_element<<std::endl;
     std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
   }
+
+
+  InverseMapComputation imc(fe_data);
+
+  // Using qrule
+  if (libMesh::on_command_line("--inverse-map"))
+  {
+    std::cout<<"\nInverse map..."<<std::endl;
+
+    auto execution_start_time = std::chrono::steady_clock::now();
+
+    for (unsigned int sweep=0; sweep<n_sweeps; sweep++)
+      Threads::parallel_reduce(elem_range, imc);
+
+    comm.barrier();
+
+    auto execution_time = std::chrono::steady_clock::now() - execution_start_time;
+
+    auto execution_time_seconds = std::chrono::duration<Real>(execution_time).count();
+    std::cout<<"Total Time: "<<execution_time_seconds<<std::endl;
+
+    auto ns_per_element = std::chrono::duration<Real, std::nano>(execution_time).count() / (Real)(mesh.n_elem() * n_sweeps);
+    std::cout<<"ns/element: "<<ns_per_element<<std::endl;
+    std::cout<<"Levelized ns/element: "<<comm.size() * libMesh::n_threads() * ns_per_element<<std::endl;
+  }
+
+
 
   return 0;
 }

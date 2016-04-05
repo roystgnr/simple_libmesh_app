@@ -41,13 +41,7 @@ public:
     auto tid = pid.id;
 
     // Get our own unique FEData
-    auto & fe_data = _fe_data[tid];
-
-    _fe = fe_data->_fe.get();
-    auto & phi = fe_data->_phi;
-
-    auto & fe_face = fe_data->_fe_face;
-    auto & normals = fe_data->_normals;
+    _this_fe_data = _fe_data[tid];
 
     for (auto & elem : range)
     {
@@ -64,7 +58,7 @@ protected:
 
   std::vector<std::shared_ptr<FEData> > & _fe_data;
 
-  FEBase * _fe;
+  std::shared_ptr<FEData> _this_fe_data;
 
   std::vector<Point> _evaluation_points;
 };
