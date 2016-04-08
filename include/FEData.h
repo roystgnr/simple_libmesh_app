@@ -39,6 +39,7 @@ public:
     _fe->attach_quadrature_rule(_qrule.get());
     _fe_face->attach_quadrature_rule(_qface.get());
 
+    _fe->get_phi(); // Keeps libMesh from calculating too much
     _fe_face->get_phi(); // Keeps libMesh from calculating too much
   }
 
